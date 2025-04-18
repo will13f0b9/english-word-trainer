@@ -1,0 +1,24 @@
+.word-list-container {
+  max-width: 1024px;
+  margin: 0 auto;
+}
+
+.word-list-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.word-list-empty {
+  text-align: center;
+  padding: 1rem;
+}
+
+.word-list-empty-text {
+  color: #6b7280;
+}
+
+.word-table-container {
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 

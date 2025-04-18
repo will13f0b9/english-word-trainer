@@ -1,0 +1,31 @@
+.header {
+  background-color: #2563eb;
+  color: white;
+  padding: 1rem;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.nav {
+  margin-top: 0.5rem;
+}
+
+.nav-list {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-button:hover {
+  text-decoration: underline;
+} 
