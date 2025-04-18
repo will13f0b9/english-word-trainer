@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/english-word-trainer/static/css/main.d978e6a4.chunk.css",
+    "main.js": "/english-word-trainer/static/js/main.ff3e04f1.chunk.js",
+    "main.js.map": "/english-word-trainer/static/js/main.ff3e04f1.chunk.js.map",
+    "runtime~main.js": "/english-word-trainer/static/js/runtime~main.2829b61a.js",
+    "runtime~main.js.map": "/english-word-trainer/static/js/runtime~main.2829b61a.js.map",
+    "static/js/2.4519393a.chunk.js": "/english-word-trainer/static/js/2.4519393a.chunk.js",
+    "static/js/2.4519393a.chunk.js.map": "/english-word-trainer/static/js/2.4519393a.chunk.js.map",
+    "index.html": "/english-word-trainer/index.html",
+    "precache-manifest.481fd3c2d2ed8272ca36677576c0de8b.js": "/english-word-trainer/precache-manifest.481fd3c2d2ed8272ca36677576c0de8b.js",
+    "service-worker.js": "/english-word-trainer/service-worker.js",
+    "static/css/main.d978e6a4.chunk.css.map": "/english-word-trainer/static/css/main.d978e6a4.chunk.css.map"
+  }
+}
