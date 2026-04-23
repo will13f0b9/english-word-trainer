@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { deleteWord, searchWords, exportWordsToJSON, importWordsFromJSON } from '../services/wordService';
+import { deleteWord, searchWords, exportWordsToJSON, importWordsFromJSON, toggleWordMastery } from '../services/wordService';
 import { Word } from '../models/Word';
 
 interface WordListProps {
   words: Word[];
   onWordDeleted: () => void;
+  onWordUpdated: () => void;
 }
 
-const WordList: React.FC<WordListProps> = ({ words, onWordDeleted }) => {
+const WordList: React.FC<WordListProps> = ({ words, onWordDeleted, onWordUpdated }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredWords, setFilteredWords] = useState<Word[]>(words);
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
@@ -121,9 +122,9 @@ const WordList: React.FC<WordListProps> = ({ words, onWordDeleted }) => {
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: '40%' }}>Word/Phrase</th>
-                <th style={{ width: '50%' }}>Definition</th>
-                <th style={{ width: '10%' }}>Actions</th>
+                <th style={{ width: '38%' }}>Word/Phrase</th>
+                <th style={{ width: '47%' }}>Definition</th>
+                <th style={{ width: '15%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -132,6 +133,27 @@ const WordList: React.FC<WordListProps> = ({ words, onWordDeleted }) => {
                   <td className="font-medium">{word.term}</td>
                   <td>{word.definition}</td>
                   <td className="text-right">
+                    <button
+                      onClick={() => {
+                        toggleWordMastery(word.id);
+                        onWordUpdated();
+                      }}
+                      title={word.mastered ? 'Un-master this word' : 'Mark as mastered'}
+                      style={{ backgroundColor: 'transparent', border: 'none', padding: '0.5rem', borderRadius: '0.25rem', transition: 'background-color 0.3s ease', width: '45px' }}
+                      className="bg-transparent border-0 p-2 rounded-full transition-colors"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill={word.mastered ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        strokeWidth={word.mastered ? 0 : 1.5}
+                        className="w-5 h-5"
+                        style={{ color: word.mastered ? '#f59e0b' : '#9ca3af' }}
+                      >
+                        <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.006z" clipRule="evenodd" />
+                      </svg>
+                    </button>
                     <button
                       onClick={() => handleDelete(word.id)}
                       style={{ backgroundColor: 'transparent', border: 'none', padding: '0.5rem', borderRadius: '0.25rem', transition: 'background-color 0.3s ease', width: '45px'}}

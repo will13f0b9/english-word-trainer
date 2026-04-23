@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Word } from '../models/Word';
+import { toggleWordMastery } from '../services/wordService';
+import TextToSpeech from "./TextToSpeech";
+import AudioRecorder from "./AudioRecorder";
+
 
 interface QuizProps {
   words: Word[];
+  onWordMastered: () => void;
 }
 
-const Quiz: React.FC<QuizProps> = ({ words }) => {
+const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
   const [currentQuestion, setCurrentQuestion] = useState<Word | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [selectedOption, setSelectedOption] = useState<string>('');
@@ -13,6 +18,7 @@ const Quiz: React.FC<QuizProps> = ({ words }) => {
   const [score, setScore] = useState<number>(0);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
   const [animatingNext, setAnimatingNext] = useState(false);
+  const [optionsRevealed, setOptionsRevealed] = useState(false);
 
   useEffect(() => {
     if (words.length >= 4) {
@@ -67,12 +73,14 @@ const Quiz: React.FC<QuizProps> = ({ words }) => {
     setOptions(allOptions);
     setSelectedOption('');
     setResult(null);
+    setOptionsRevealed(false);
   };
 
   const handleOptionSelect = (option: string) => {
     if (result) return; // Prevent multiple selections
 
     setSelectedOption(option);
+    setOptionsRevealed(true);
 
     if (currentQuestion && option === currentQuestion.definition) {
       setResult('correct');
@@ -98,10 +106,10 @@ const Quiz: React.FC<QuizProps> = ({ words }) => {
         </div>
         <h2 className="text-xl font-semibold text-gray-800 mb-2">Not Enough Words</h2>
         <p className="text-gray-500 mb-4">
-          You need at least 4 words in your vocabulary list to start a quiz.
+          You need at least 4 non-mastered words to start a quiz.
         </p>
         <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
-          <p className="text-sm text-blue-700">Try adding more words to your list, then come back to test your knowledge.</p>
+          <p className="text-sm text-blue-700">Add more words to your list, or go to <strong>My Words</strong> and un-master some words to include them in the quiz again.</p>
         </div>
       </div>
     );
@@ -112,7 +120,7 @@ const Quiz: React.FC<QuizProps> = ({ words }) => {
       className={`bg-white shadow-sm rounded-lg overflow-hidden max-w-md mx-auto transition-opacity duration-300 ${animatingNext ? 'opacity-0' : 'opacity-100'}`}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4 text-white">
+      <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 text-white">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-2 text-white opacity-90">
@@ -123,11 +131,28 @@ const Quiz: React.FC<QuizProps> = ({ words }) => {
             <h2 className="font-bold text-lg">Word Quiz</h2>
           </div>
 
-          {totalQuestions > 0 && (
-            <span className="bg-white bg-opacity-30 text-white text-xs font-medium py-1 px-3 rounded-full">
-              Score: {score}/{totalQuestions}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {totalQuestions > 0 && (
+              <span className="bg-white bg-opacity-30 text-white text-xs font-medium py-1 px-3 rounded-full">
+                Score: {score}/{totalQuestions}
+              </span>
+            )}
+            {currentQuestion && (
+              <button
+                onClick={() => {
+                  toggleWordMastery(currentQuestion.id);
+                  onWordMastered();
+                }}
+                title="Mark as mastered — this word won't appear in the quiz anymore"
+                className="flex items-center gap-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white text-xs font-medium py-1 px-3 rounded-full transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-yellow-300">
+                  <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.006z" clipRule="evenodd" />
+                </svg>
+                Master
+              </button>
+            )}
+          </div>
         </div>
 
         {totalQuestions > 0 && (
@@ -157,7 +182,26 @@ const Quiz: React.FC<QuizProps> = ({ words }) => {
               <p className="text-xl font-bold text-gray-800 p-3 border border-gray-100 rounded-lg bg-gray-50 text-center" style={{ fontWeight: 'bold' }}>
                 {currentQuestion.term.toUpperCase()}
               </p>
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "8px" }}>
+                <TextToSpeech text={currentQuestion.term} />
+                <AudioRecorder key={currentQuestion.id} />
+              </div>
             </div>
+
+            {!optionsRevealed && !result && (
+              <div className="flex justify-center mb-3">
+                <button
+                  onClick={() => setOptionsRevealed(true)}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 transition-all flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                    <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
+                  </svg>
+                  Reveal Options
+                </button>
+              </div>
+            )}
 
             <div className="space-y-2 mb-4">
               {options.map((option, index) => {
@@ -193,11 +237,13 @@ const Quiz: React.FC<QuizProps> = ({ words }) => {
                       onClick={() => handleOptionSelect(option)}
                       disabled={!!result}
                       className={buttonClasses}
-                      style={{ padding: '10px 10px 10px 10px',  backgroundColor: 'white', flex: '0 0 calc(50% - 10px)', boxSizing: 'border-box' }}
+                      style={{ padding: '10px 10px 10px 10px', backgroundColor: 'white', flex: '0 0 calc(50% - 10px)', boxSizing: 'border-box' }}
                     >
-                      <span className="inline-flex items-center" style={{ }}>
+                      <span className="inline-flex items-center">
                         <span className="font-small mr-2">{letter}.</span>
-                        <span>{option.toUpperCase()}</span>
+                        <span style={!optionsRevealed ? { filter: 'blur(5px)', userSelect: 'none' } : {}}>
+                          {option.toUpperCase()}
+                        </span>
                       </span>
                     </button>
                   </div>

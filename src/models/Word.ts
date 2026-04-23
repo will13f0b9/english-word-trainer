@@ -3,4 +3,5 @@ export interface Word {
   term: string;
   definition: string;
   createdAt: number;
+  mastered?: boolean;
 } 

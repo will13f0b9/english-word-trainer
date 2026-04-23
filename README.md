@@ -44,3 +44,14 @@ You don't have to ever use `eject`. The curated feature set is suitable for smal
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+
+## Backlog
+1 - ~~In quiz page, hidden by the default the options text and add a button to show the options text.~~ ✅
+2 - ~~In quiz page, User can record an audio how much time he wants, and show the option to hear the recorded audio.~~ ✅
+3 - ~~In quiz page, Add a option to masterize ( hidden ) the word, So it's not been showed anymore, until marked as not masterized in the word list page ( it will be made in the option 5 ).~~ ✅
+4 - In quiz page, improve the sort algorith, to show more often new words ( not showed before ) and failed words first be frequently showed again. Words with success rate should be showed less often.
+5 - ~~In my words page, add a check a word as masterized or not.~~ ✅
+6 - In the word list page, add a CSV Upload option, where only has one header called word
+7 - Fix the icon and title page for the rigth app name. And add go home on logo header click
+8 - In the word list page, add a in the words list a way to order by the masterized items

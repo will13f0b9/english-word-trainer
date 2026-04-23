@@ -64,14 +64,14 @@ function App() {
           <div className="container fade-in">
             <WordForm onWordAdded={loadWords} />
             <div className="mt-4">
-              <WordList words={words} onWordDeleted={loadWords} />
+              <WordList words={words} onWordDeleted={loadWords} onWordUpdated={loadWords} />
             </div>
           </div>
         );
       case 'quiz':
         return (
           <div className="container fade-in">
-            <Quiz words={words} />
+            <Quiz words={words.filter(w => !w.mastered)} onWordMastered={loadWords} />
           </div>
         );
     }
