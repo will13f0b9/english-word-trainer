@@ -46,6 +46,13 @@ export const deleteWord = (id: string): void => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
 };
 
+export const updateWordSM2 = (updated: Word): void => {
+  const words = getWords().map(word =>
+    word.id === updated.id ? updated : word
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+};
+
 export const toggleWordMastery = (id: string): void => {
   const words = getWords().map(word =>
     word.id === id ? { ...word, mastered: !word.mastered } : word

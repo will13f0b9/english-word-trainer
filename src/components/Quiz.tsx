@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Word } from '../models/Word';
-import { toggleWordMastery } from '../services/wordService';
+import { toggleWordMastery, updateWordSM2 } from '../services/wordService';
+import { calculateSM2, selectNextWord } from '../services/sm2Service';
 import TextToSpeech from "./TextToSpeech";
 import AudioRecorder from "./AudioRecorder";
 
@@ -11,6 +12,7 @@ interface QuizProps {
 }
 
 const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
+  const [localWords, setLocalWords] = useState<Word[]>(words);
   const [currentQuestion, setCurrentQuestion] = useState<Word | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [selectedOption, setSelectedOption] = useState<string>('');
@@ -19,42 +21,46 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
   const [animatingNext, setAnimatingNext] = useState(false);
   const [optionsRevealed, setOptionsRevealed] = useState(false);
+  const [sessionNewCount, setSessionNewCount] = useState(0);
 
+  // Track whether the initial question has been generated
+  const initializedRef = useRef(false);
+
+  // Sync localWords when the parent updates words (mastery toggle, additions, deletions)
+  // but do NOT reset the current question mid-quiz
   useEffect(() => {
-    if (words.length >= 4) {
-      generateQuestion(words);
-    }
+    setLocalWords(words);
   }, [words]);
 
-  const generateQuestion = (wordList: Word[]) => {
-    if (wordList.length < 4) {
-      return;
+  // Generate the first question once we have enough words
+  useEffect(() => {
+    if (!initializedRef.current && localWords.length >= 4) {
+      initializedRef.current = true;
+      generateNewQuestion(localWords, sessionNewCount);
     }
+  }, [localWords]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // If transitioning between questions, add animation
+  const generateQuestion = (wordList: Word[], newCount: number) => {
+    if (wordList.length < 4) return;
+
     if (currentQuestion) {
       setAnimatingNext(true);
       setTimeout(() => {
-        // Reset animation state and update question
         setAnimatingNext(false);
-        generateNewQuestion(wordList);
+        generateNewQuestion(wordList, newCount);
       }, 300);
     } else {
-      generateNewQuestion(wordList);
+      generateNewQuestion(wordList, newCount);
     }
   };
 
-  const generateNewQuestion = (wordList: Word[]) => {
-    // Get random word for question
-    const randomIndex = Math.floor(Math.random() * wordList.length);
-    const questionWord = wordList[randomIndex];
+  const generateNewQuestion = (wordList: Word[], newCount: number) => {
+    const questionWord = selectNextWord(wordList, newCount);
     setCurrentQuestion(questionWord);
 
-    // Create options (1 correct, 3 incorrect)
     const correctOption = questionWord.definition;
     const incorrectOptions: string[] = [];
 
-    // Get 3 random incorrect options
     while (incorrectOptions.length < 3) {
       const randomIdx = Math.floor(Math.random() * wordList.length);
       const option = wordList[randomIdx].definition;
@@ -63,7 +69,6 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
       }
     }
 
-    // Combine and shuffle options
     const allOptions = [correctOption, ...incorrectOptions];
     for (let i = allOptions.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -77,12 +82,14 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
   };
 
   const handleOptionSelect = (option: string) => {
-    if (result) return; // Prevent multiple selections
+    if (result) return;
 
     setSelectedOption(option);
     setOptionsRevealed(true);
 
-    if (currentQuestion && option === currentQuestion.definition) {
+    const correct = currentQuestion != null && option === currentQuestion.definition;
+
+    if (correct) {
       setResult('correct');
       setScore(prev => prev + 1);
     } else {
@@ -90,13 +97,29 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
     }
 
     setTotalQuestions(prev => prev + 1);
+
+    // Apply SM-2 and persist
+    if (currentQuestion) {
+      const isNew = currentQuestion.smNextReview == null;
+      const updatedWord = calculateSM2(currentQuestion, correct);
+      updateWordSM2(updatedWord);
+
+      const updatedLocalWords = localWords.map(w =>
+        w.id === updatedWord.id ? updatedWord : w
+      );
+      setLocalWords(updatedLocalWords);
+
+      if (isNew && correct) {
+        setSessionNewCount(prev => prev + 1);
+      }
+    }
   };
 
   const handleNextQuestion = () => {
-    generateQuestion(words);
+    generateQuestion(localWords, sessionNewCount);
   };
 
-  if (words.length < 4) {
+  if (localWords.filter(w => !w.mastered).length < 4) {
     return (
       <div className="bg-white shadow-sm rounded-lg p-6 max-w-md mx-auto text-center">
         <div className="bg-gray-50 rounded-full p-4 mx-auto w-16 h-16 flex items-center justify-center mb-4">
@@ -211,29 +234,19 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
 
                 let buttonClasses = "w-full text-left px-3 py-2 rounded transition-all";
 
-                // Default state (no result yet)
                 if (!result) {
                   buttonClasses += " bg-white hover:bg-gray-50 border-gray-300";
-                }
-                // Correct answer
-                else if (isCorrect) {
+                } else if (isCorrect) {
                   buttonClasses += " bg-green-50 border-green-300 text-green-700";
-                }
-                // Selected but incorrect
-                else if (isSelected) {
+                } else if (isSelected) {
                   buttonClasses += " bg-red-50 border-red-300 text-red-700";
-                }
-                // Not selected and not correct
-                else {
+                } else {
                   buttonClasses += " bg-gray-50 border-gray-300 text-gray-500";
                 }
 
                 return (
-                  <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', margin: '10px 10px 10px 10px' }}>
-
-
+                  <div key={index} style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', margin: '10px 10px 10px 10px' }}>
                     <button
-                      key={index}
                       onClick={() => handleOptionSelect(option)}
                       disabled={!!result}
                       className={buttonClasses}
@@ -278,4 +291,4 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
   );
 };
 
-export default Quiz; 
+export default Quiz;
