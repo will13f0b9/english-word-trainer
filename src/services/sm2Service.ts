@@ -1,6 +1,6 @@
 import { Word } from '../models/Word';
 
-const MAX_NEW_PER_SESSION = 5;
+const MAX_NEW_PER_SESSION = 10;
 const DEFAULT_EASE_FACTOR = 2.5;
 const MIN_EASE_FACTOR = 1.3;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

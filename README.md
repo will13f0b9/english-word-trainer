@@ -55,4 +55,4 @@ To learn React, check out the [React documentation](https://reactjs.org/).
 6 - In the word list page, add a CSV Upload option, where only has one header called word
 7 - Fix the icon and title page for the rigth app name. And add go home on logo header click
 8 - In the word list page, add a in the words list a way to order by the masterized items
-9 - Improve layout for a nice mobile experience, I like dark theme and greys scales.
+9 - ~~Improve layout for a nice mobile experience, I like dark theme and greys scales.~~ ✅
