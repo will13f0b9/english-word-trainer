@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { deleteWord, exportWordsToJSON, importWordsFromJSON, toggleWordMastery } from '../services/wordService';
+import { deleteWord, exportWordsToJSON, importWordsFromJSON, toggleWordMastery, toggleWordPriority } from '../services/wordService';
 import { Word } from '../models/Word';
 
 interface WordListProps {
@@ -27,6 +27,24 @@ const SpinnerIcon = () => (
   <svg className="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="18" height="18">
     <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
     <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+);
+
+const FlameIcon = ({ active }: { active: boolean }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill={active ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    strokeWidth={active ? 0 : 1.5}
+    width="20"
+    height="20"
+  >
+    <path
+      fillRule="evenodd"
+      d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.177A7.547 7.547 0 0 1 6.648 6.61a.75.75 0 0 0-1.152-.082A9 9 0 1 0 15.68 4.534a7.46 7.46 0 0 1-2.717-2.248ZM15.75 14.25a3.75 3.75 0 1 1-7.313-1.172c.628.465 1.35.81 2.133 1a5.99 5.99 0 0 1 1.925-3.546 3.75 3.75 0 0 1 3.255 3.718Z"
+      clipRule="evenodd"
+    />
   </svg>
 );
 
@@ -116,8 +134,16 @@ const WordList: React.FC<WordListProps> = ({ words, onWordDeleted, onWordUpdated
                 textDecoration: word.mastered ? 'line-through' : 'none',
                 marginBottom: '0.2rem',
                 wordBreak: 'break-word',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
               }}>
                 {word.term}
+                {word.priority && (
+                  <span aria-hidden="true" style={{ color: 'var(--warning)', display: 'inline-flex', lineHeight: 1 }}>
+                    <FlameIcon active={true} />
+                  </span>
+                )}
               </p>
               <p style={{
                 fontSize: '0.875rem',
@@ -130,6 +156,16 @@ const WordList: React.FC<WordListProps> = ({ words, onWordDeleted, onWordUpdated
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
+              <button
+                className="btn-icon"
+                onClick={() => { toggleWordPriority(word.id); onWordUpdated(); }}
+                title={word.priority ? 'Remove priority' : 'Mark as priority'}
+                aria-label={word.priority ? 'Remove priority' : 'Mark as priority'}
+                aria-pressed={word.priority ?? false}
+                style={{ color: word.priority ? 'var(--warning)' : 'var(--text-muted)' }}
+              >
+                <FlameIcon active={word.priority ?? false} />
+              </button>
               <button
                 className="btn-icon"
                 onClick={() => { toggleWordMastery(word.id); onWordUpdated(); }}

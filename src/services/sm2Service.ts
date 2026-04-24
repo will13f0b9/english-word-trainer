@@ -39,6 +39,14 @@ export const calculateSM2 = (word: Word, correct: boolean): Word => {
   };
 };
 
+// Within a list of candidates, pick randomly from prioritized ones if any exist;
+// otherwise pick randomly from the full list.
+const pickPreferringPriority = (candidates: Word[]): Word => {
+  const prioritized = candidates.filter(w => w.priority);
+  const pool = prioritized.length > 0 ? prioritized : candidates;
+  return pool[Math.floor(Math.random() * pool.length)];
+};
+
 export const selectNextWord = (words: Word[], sessionNewCount: number): Word => {
   const now = Date.now();
   const eligible = words.filter(w => !w.mastered);
@@ -48,23 +56,25 @@ export const selectNextWord = (words: Word[], sessionNewCount: number): Word => 
     w => w.smNextReview != null && w.smNextReview <= now
   );
   if (dueWords.length > 0) {
-    return dueWords[Math.floor(Math.random() * dueWords.length)];
+    return pickPreferringPriority(dueWords);
   }
 
   // Priority 2: new words (never seen), within the per-session cap
   const newWords = eligible.filter(w => w.smNextReview == null);
   if (newWords.length > 0 && sessionNewCount < MAX_NEW_PER_SESSION) {
-    return newWords[Math.floor(Math.random() * newWords.length)];
+    return pickPreferringPriority(newWords);
   }
 
-  // Priority 3: fallback — word with the earliest future review date
+  // Priority 3: fallback — prefer earliest-scheduled prioritized future word,
+  // then earliest-scheduled word overall
   const futureWords = eligible
     .filter(w => w.smNextReview != null && w.smNextReview > now)
     .sort((a, b) => (a.smNextReview ?? 0) - (b.smNextReview ?? 0));
   if (futureWords.length > 0) {
-    return futureWords[0];
+    const prioritizedFuture = futureWords.filter(w => w.priority);
+    return prioritizedFuture.length > 0 ? prioritizedFuture[0] : futureWords[0];
   }
 
   // Last resort: any eligible word (handles all-new + cap exceeded edge case)
-  return eligible[Math.floor(Math.random() * eligible.length)];
+  return pickPreferringPriority(eligible);
 };
