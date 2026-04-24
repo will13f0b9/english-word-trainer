@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "a950fe55a7576ef18405390fa4aac0f5",
+    "revision": "32c6b0cfac37439b83425b7f6b457d38",
     "url": "/english-word-trainer/index.html"
   },
   {
