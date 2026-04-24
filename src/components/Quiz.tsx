@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Word } from '../models/Word';
-import { toggleWordMastery } from '../services/wordService';
-import TextToSpeech from "./TextToSpeech";
-import AudioRecorder from "./AudioRecorder";
-
+import { toggleWordMastery, updateWordSM2 } from '../services/wordService';
+import { calculateSM2, selectNextWord } from '../services/sm2Service';
+import TextToSpeech from './TextToSpeech';
+import AudioRecorder from './AudioRecorder';
 
 interface QuizProps {
   words: Word[];
@@ -11,59 +11,40 @@ interface QuizProps {
 }
 
 const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
+  const [localWords, setLocalWords] = useState<Word[]>(words);
   const [currentQuestion, setCurrentQuestion] = useState<Word | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [selectedOption, setSelectedOption] = useState<string>('');
   const [result, setResult] = useState<'correct' | 'incorrect' | null>(null);
-  const [score, setScore] = useState<number>(0);
-  const [totalQuestions, setTotalQuestions] = useState<number>(0);
+  const [score, setScore] = useState(0);
+  const [totalQuestions, setTotalQuestions] = useState(0);
   const [animatingNext, setAnimatingNext] = useState(false);
   const [optionsRevealed, setOptionsRevealed] = useState(false);
+  const [sessionNewCount, setSessionNewCount] = useState(0);
+  const initializedRef = useRef(false);
+
+  useEffect(() => { setLocalWords(words); }, [words]);
 
   useEffect(() => {
-    if (words.length >= 4) {
-      generateQuestion(words);
+    if (!initializedRef.current && localWords.length >= 4) {
+      initializedRef.current = true;
+      generateNewQuestion(localWords, sessionNewCount);
     }
-  }, [words]);
+  }, [localWords]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const generateQuestion = (wordList: Word[]) => {
-    if (wordList.length < 4) {
-      return;
-    }
-
-    // If transitioning between questions, add animation
-    if (currentQuestion) {
-      setAnimatingNext(true);
-      setTimeout(() => {
-        // Reset animation state and update question
-        setAnimatingNext(false);
-        generateNewQuestion(wordList);
-      }, 300);
-    } else {
-      generateNewQuestion(wordList);
-    }
-  };
-
-  const generateNewQuestion = (wordList: Word[]) => {
-    // Get random word for question
-    const randomIndex = Math.floor(Math.random() * wordList.length);
-    const questionWord = wordList[randomIndex];
+  const generateNewQuestion = (wordList: Word[], newCount: number) => {
+    const questionWord = selectNextWord(wordList, newCount);
     setCurrentQuestion(questionWord);
 
-    // Create options (1 correct, 3 incorrect)
     const correctOption = questionWord.definition;
     const incorrectOptions: string[] = [];
-
-    // Get 3 random incorrect options
     while (incorrectOptions.length < 3) {
-      const randomIdx = Math.floor(Math.random() * wordList.length);
-      const option = wordList[randomIdx].definition;
+      const option = wordList[Math.floor(Math.random() * wordList.length)].definition;
       if (option !== correctOption && !incorrectOptions.includes(option)) {
         incorrectOptions.push(option);
       }
     }
 
-    // Combine and shuffle options
     const allOptions = [correctOption, ...incorrectOptions];
     for (let i = allOptions.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -76,77 +57,113 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
     setOptionsRevealed(false);
   };
 
-  const handleOptionSelect = (option: string) => {
-    if (result) return; // Prevent multiple selections
+  const generateQuestion = (wordList: Word[], newCount: number) => {
+    if (wordList.length < 4) return;
+    if (currentQuestion) {
+      setAnimatingNext(true);
+      setTimeout(() => {
+        setAnimatingNext(false);
+        generateNewQuestion(wordList, newCount);
+      }, 300);
+    } else {
+      generateNewQuestion(wordList, newCount);
+    }
+  };
 
+  const handleOptionSelect = (option: string) => {
+    if (result) return;
     setSelectedOption(option);
     setOptionsRevealed(true);
 
-    if (currentQuestion && option === currentQuestion.definition) {
-      setResult('correct');
-      setScore(prev => prev + 1);
-    } else {
-      setResult('incorrect');
+    const correct = currentQuestion != null && option === currentQuestion.definition;
+    if (correct) { setResult('correct'); setScore(s => s + 1); }
+    else { setResult('incorrect'); }
+    setTotalQuestions(t => t + 1);
+
+    if (currentQuestion) {
+      const isNew = currentQuestion.smNextReview == null;
+      const updatedWord = calculateSM2(currentQuestion, correct);
+      updateWordSM2(updatedWord);
+      const updatedLocalWords = localWords.map(w => w.id === updatedWord.id ? updatedWord : w);
+      setLocalWords(updatedLocalWords);
+      if (isNew && correct) setSessionNewCount(c => c + 1);
     }
-
-    setTotalQuestions(prev => prev + 1);
   };
 
-  const handleNextQuestion = () => {
-    generateQuestion(words);
-  };
+  const handleNextQuestion = () => generateQuestion(localWords, sessionNewCount);
 
-  if (words.length < 4) {
+  if (localWords.filter(w => !w.mastered).length < 4) {
     return (
-      <div className="bg-white shadow-sm rounded-lg p-6 max-w-md mx-auto text-center">
-        <div className="bg-gray-50 rounded-full p-4 mx-auto w-16 h-16 flex items-center justify-center mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-gray-400">
+      <div className="card fade-in" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: '50%',
+          background: 'var(--surface-raised)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 1rem',
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+            width="28" height="28" style={{ color: 'var(--text-muted)' }}>
             <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 01-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 01-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 01-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584zM12 18a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">Not Enough Words</h2>
-        <p className="text-gray-500 mb-4">
+        <h2 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Not Enough Words</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.9rem' }}>
           You need at least 4 non-mastered words to start a quiz.
         </p>
-        <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
-          <p className="text-sm text-blue-700">Add more words to your list, or go to <strong>My Words</strong> and un-master some words to include them in the quiz again.</p>
+        <div style={{
+          background: 'var(--accent-dim)', border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: '0.5rem', padding: '0.875rem', fontSize: '0.875rem', color: 'var(--accent)',
+        }}>
+          Add more words, or un-master some in My Words.
         </div>
       </div>
     );
   }
 
+  const progressPct = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+
   return (
     <div
-      className={`bg-white shadow-sm rounded-lg overflow-hidden max-w-md mx-auto transition-opacity duration-300 ${animatingNext ? 'opacity-0' : 'opacity-100'}`}
+      className="card fade-in"
+      style={{
+        overflow: 'hidden',
+        transition: 'opacity 0.3s',
+        opacity: animatingNext ? 0 : 1,
+      }}
     >
-      {/* Header */}
-      <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 text-white">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-2 text-white opacity-90">
-              <path d="M11.7 2.805a.75.75 0 01.6 0A60.65 60.65 0 0122.83 8.72a.75.75 0 01-.231 1.337 49.949 49.949 0 00-9.902 3.912l-.003.002-.34.18a.75.75 0 01-.707 0A50.009 50.009 0 007.5 12.174v-.224c0-.131.067-.248.172-.311a54.614 54.614 0 014.653-2.52.75.75 0 00-.65-1.352 56.129 56.129 0 00-4.78 2.589 1.858 1.858 0 00-.859 1.228 49.803 49.803 0 00-4.634-1.527.75.75 0 01-.231-1.337A60.653 60.653 0 0111.7 2.805z" />
-              <path d="M13.06 15.473a48.45 48.45 0 017.666-3.282c.134 1.414.22 2.843.255 4.285a.75.75 0 01-.46.71 47.878 47.878 0 00-8.105 4.342.75.75 0 01-.832 0 47.877 47.877 0 00-8.104-4.342.75.75 0 01-.461-.71c.035-1.442.121-2.87.255-4.286A48.4 48.4 0 016 13.18v1.27a1.5 1.5 0 00-.14 2.508c-.09.38-.222.753-.397 1.11.452.213.901.434 1.346.661a6.729 6.729 0 00.551-1.608 1.5 1.5 0 00.14-2.67v-.645a48.549 48.549 0 013.44 1.668 2.25 2.25 0 002.12 0z" />
-              <path d="M4.462 19.462c.42-.419.753-.89 1-1.394.453.213.902.434 1.347.661a6.743 6.743 0 01-1.286 1.794.75.75 0 11-1.06-1.06z" />
-            </svg>
-            <h2 className="font-bold text-lg">Word Quiz</h2>
-          </div>
-
-          <div className="flex items-center gap-2">
+      {/* Quiz header */}
+      <div style={{
+        padding: '1rem 1.25rem',
+        background: 'var(--surface-raised)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: totalQuestions > 0 ? '0.75rem' : 0 }}>
+          <span style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)' }}>Word Quiz</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {totalQuestions > 0 && (
-              <span className="bg-white bg-opacity-30 text-white text-xs font-medium py-1 px-3 rounded-full">
-                Score: {score}/{totalQuestions}
+              <span style={{
+                fontSize: '0.8125rem', fontWeight: 500,
+                color: 'var(--text-secondary)',
+                background: 'var(--border)',
+                padding: '0.2rem 0.625rem',
+                borderRadius: '9999px',
+              }}>
+                {score}/{totalQuestions}
               </span>
             )}
             {currentQuestion && (
               <button
-                onClick={() => {
-                  toggleWordMastery(currentQuestion.id);
-                  onWordMastered();
+                onClick={() => { toggleWordMastery(currentQuestion.id); onWordMastered(); }}
+                title="Mark as mastered — won't appear in quiz anymore"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.375rem',
+                  background: 'var(--border)', border: 'none', borderRadius: '9999px',
+                  padding: '0.25rem 0.75rem', fontSize: '0.8125rem', fontWeight: 500,
+                  color: 'var(--text-secondary)', cursor: 'pointer', transition: 'var(--transition)',
                 }}
-                title="Mark as mastered — this word won't appear in the quiz anymore"
-                className="flex items-center gap-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white text-xs font-medium py-1 px-3 rounded-full transition-all"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-yellow-300">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                  width="14" height="14" style={{ color: 'var(--warning)' }}>
                   <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.006z" clipRule="evenodd" />
                 </svg>
                 Master
@@ -155,127 +172,161 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
           </div>
         </div>
 
+        {/* Progress bar */}
         {totalQuestions > 0 && (
-          <div className="mt-2 bg-white bg-opacity-20 rounded-full h-1.5" style={{ fontWeight: 'bold' }}>
-            <div
-              className="bg-white h-1.5 rounded-full transition-all duration-500"
-              style={{ width: `${Math.round((score / totalQuestions) * 100)}%` }}
-            />
+          <div style={{ height: 4, background: 'var(--border)', borderRadius: 9999, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 9999,
+              background: 'var(--accent)',
+              width: `${progressPct}%`,
+              transition: 'width 0.5s ease',
+            }} />
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-6">
+      {/* Quiz body */}
+      <div style={{ padding: '1.25rem' }}>
         {currentQuestion && (
-          <div>
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-xs font-medium text-gray-500">
-                  Question {totalQuestions + 1}
-                </span>
-                <span className="text-xs font-medium px-2 py-1 bg-blue-50 text-blue-700 rounded-full" style={{ fontWeight: 'bold' }}>
+          <>
+            {/* Question number + score badge */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                Question {totalQuestions + 1}
+              </span>
+              {totalQuestions > 0 && (
+                <span style={{
+                  fontSize: '0.75rem', fontWeight: 500,
+                  background: 'var(--accent-dim)', color: 'var(--accent)',
+                  padding: '0.15rem 0.5rem', borderRadius: '9999px',
+                }}>
                   {score} correct
                 </span>
-              </div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">What is the meaning of:</h3>
-              <p className="text-xl font-bold text-gray-800 p-3 border border-gray-100 rounded-lg bg-gray-50 text-center" style={{ fontWeight: 'bold' }}>
-                {currentQuestion.term.toUpperCase()}
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "8px" }}>
-                <TextToSpeech text={currentQuestion.term} />
-                <AudioRecorder key={currentQuestion.id} />
-              </div>
+              )}
             </div>
 
+            {/* Word display */}
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.375rem' }}>
+              What is the meaning of:
+            </p>
+            <div style={{
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--border)',
+              borderRadius: '0.625rem',
+              padding: '1rem',
+              textAlign: 'center',
+              marginBottom: '1rem',
+            }}>
+              <p style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '0.02em', color: 'var(--text)' }}>
+                {currentQuestion.term.toUpperCase()}
+              </p>
+            </div>
+
+            {/* TTS + recorder */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
+              <TextToSpeech text={currentQuestion.term} />
+              <AudioRecorder key={currentQuestion.id} />
+            </div>
+
+            {/* Reveal button */}
             {!optionsRevealed && !result && (
-              <div className="flex justify-center mb-3">
-                <button
-                  onClick={() => setOptionsRevealed(true)}
-                  className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 transition-all flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-                    <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
-                  </svg>
-                  Reveal Options
-                </button>
-              </div>
+              <button
+                onClick={() => setOptionsRevealed(true)}
+                className="btn btn-ghost w-full"
+                style={{ marginBottom: '0.75rem', border: '1px solid var(--border)' }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                  <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
+                </svg>
+                Reveal Options
+              </button>
             )}
 
-            <div className="space-y-2 mb-4">
+            {/* Options — full width single column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               {options.map((option, index) => {
                 const isSelected = selectedOption === option;
                 const isCorrect = option === currentQuestion.definition;
                 const letter = String.fromCharCode(65 + index);
 
-                let buttonClasses = "w-full text-left px-3 py-2 rounded transition-all";
+                let bg = 'var(--surface-raised)';
+                let borderColor = 'var(--border)';
+                let textColor = 'var(--text)';
 
-                // Default state (no result yet)
-                if (!result) {
-                  buttonClasses += " bg-white hover:bg-gray-50 border-gray-300";
-                }
-                // Correct answer
-                else if (isCorrect) {
-                  buttonClasses += " bg-green-50 border-green-300 text-green-700";
-                }
-                // Selected but incorrect
-                else if (isSelected) {
-                  buttonClasses += " bg-red-50 border-red-300 text-red-700";
-                }
-                // Not selected and not correct
-                else {
-                  buttonClasses += " bg-gray-50 border-gray-300 text-gray-500";
+                if (result) {
+                  if (isCorrect) { bg = 'rgba(16,185,129,0.12)'; borderColor = 'rgba(16,185,129,0.5)'; textColor = '#34d399'; }
+                  else if (isSelected) { bg = 'rgba(239,68,68,0.12)'; borderColor = 'rgba(239,68,68,0.5)'; textColor = '#f87171'; }
+                  else { textColor = 'var(--text-muted)'; }
                 }
 
                 return (
-                  <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', margin: '10px 10px 10px 10px' }}>
-
-
-                    <button
-                      key={index}
-                      onClick={() => handleOptionSelect(option)}
-                      disabled={!!result}
-                      className={buttonClasses}
-                      style={{ padding: '10px 10px 10px 10px', backgroundColor: 'white', flex: '0 0 calc(50% - 10px)', boxSizing: 'border-box' }}
-                    >
-                      <span className="inline-flex items-center">
-                        <span className="font-small mr-2">{letter}.</span>
-                        <span style={!optionsRevealed ? { filter: 'blur(5px)', userSelect: 'none' } : {}}>
-                          {option.toUpperCase()}
-                        </span>
-                      </span>
-                    </button>
-                  </div>
+                  <button
+                    key={index}
+                    onClick={() => handleOptionSelect(option)}
+                    disabled={!!result}
+                    style={{
+                      width: '100%',
+                      minHeight: 48,
+                      textAlign: 'left',
+                      padding: '0.75rem 1rem',
+                      background: bg,
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: '0.5rem',
+                      color: textColor,
+                      cursor: result ? 'default' : 'pointer',
+                      transition: 'background 0.15s, border-color 0.15s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.625rem',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    <span style={{
+                      width: 24, height: 24, borderRadius: '50%',
+                      background: 'var(--border)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
+                      color: 'var(--text-secondary)',
+                    }}>
+                      {letter}
+                    </span>
+                    <span style={!optionsRevealed ? { filter: 'blur(5px)', userSelect: 'none' } : {}}>
+                      {option}
+                    </span>
+                  </button>
                 );
               })}
             </div>
 
-            {result && (
-              <div>
-                {result === 'incorrect' && (
-                  <div className="bg-red-50 border border-red-100 rounded-md p-3 mb-4 text-sm text-red-700">
-                    <p className="font-medium" style={{ fontWeight: 'bold', color: 'red' }}>Incorrect answer</p>
-                    <p>The correct answer is: <span className="font-medium" style={{ fontWeight: 'bold' }}>{currentQuestion.definition.toUpperCase()}</span></p>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleNextQuestion}
-                  className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-md hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm flex items-center justify-center"
-                >
-                  <span>Next Question</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-2">
-                    <path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" />
-                  </svg>
-                </button>
+            {/* Result feedback */}
+            {result === 'incorrect' && (
+              <div style={{
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: '0.5rem', padding: '0.875rem', marginBottom: '1rem',
+                fontSize: '0.875rem',
+              }}>
+                <p style={{ fontWeight: 600, color: '#f87171', marginBottom: '0.25rem' }}>Incorrect</p>
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  Correct answer: <strong style={{ color: 'var(--text)' }}>{currentQuestion.definition}</strong>
+                </p>
               </div>
             )}
-          </div>
+
+            {/* Next button */}
+            {result && (
+              <button onClick={handleNextQuestion} className="btn btn-primary w-full">
+                Next Question
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                  <path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 };
 
-export default Quiz; 
+export default Quiz;
