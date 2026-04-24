@@ -53,6 +53,6 @@ To learn React, check out the [React documentation](https://reactjs.org/).
 4 - ~~In quiz page, i would like to improve the sort algorith, to show more often unshowed words and failed words should be showed again most frequently. Words with success rate should be showed less often than normal.~~ ✅
 5 - ~~In my words page, add a check a word as masterized or not.~~ ✅
 6 - In the word list page, add a CSV Upload option, where only has one header called word
-7 - Fix the icon and title page for the rigth app name. And add go home on logo header click
-8 - In the word list page, add a in the words list a way to order by the masterized items
+7 - ~~Fix the icon and title page for the rigth app name. And add go home on logo header click~~ ✅
+8 - ~~In the word list page and quiz page, add a option in the word list page to priorize word to be selected more often in the quiz page.~~ ✅
 9 - ~~Improve layout for a nice mobile experience, I like dark theme and greys scales.~~ ✅
