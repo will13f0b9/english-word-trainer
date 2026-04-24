@@ -16,7 +16,7 @@ const makeWord = (id: string, overrides: Partial<Word> = {}): Word => ({
 // Helpers to build word arrays with guaranteed 4+ entries for Quiz
 const padTo4 = (words: Word[]): Word[] => {
   const extras = ['pad1', 'pad2', 'pad3', 'pad4'].map(id =>
-    makeWord(id, { smNextReview: future })
+    makeWord(id, { smNextReview: future + 999999 })
   );
   return [...words, ...extras].slice(0, Math.max(words.length, 4));
 };
@@ -72,6 +72,22 @@ describe('selectNextWord — priority within future fallback tier', () => {
     const words = padTo4([w1, w2]);
 
     expect(selectNextWord(words, 5).id).toBe('w1');
+  });
+});
+
+describe('selectNextWord — priority within last-resort tier', () => {
+  it('picks a prioritized word when session new-word cap is exceeded', () => {
+    // All words are new (no smNextReview), but sessionNewCount >= 10 (cap exceeded)
+    // so they bypass tier 2 and fall through to last resort
+    const normal = makeWord('normal', { smNextReview: undefined, priority: false });
+    const prio   = makeWord('prio',   { smNextReview: undefined, priority: true });
+    const extra1 = makeWord('extra1', { smNextReview: undefined });
+    const extra2 = makeWord('extra2', { smNextReview: undefined });
+    const words  = [normal, prio, extra1, extra2];
+
+    for (let i = 0; i < 20; i++) {
+      expect(selectNextWord(words, 10).id).toBe('prio');
+    }
   });
 });
 
