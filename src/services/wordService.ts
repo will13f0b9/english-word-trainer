@@ -60,6 +60,13 @@ export const toggleWordMastery = (id: string): void => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
 };
 
+export const toggleWordPriority = (id: string): void => {
+  const words = getWords().map(word =>
+    word.id === id ? { ...word, priority: !word.priority } : word
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+};
+
 // Export words to a JSON file
 export const exportWordsToJSON = (): void => {
   const words = getWords();

@@ -1,92 +1,65 @@
-.app-container {
-  min-height: 100vh;
-  background-color: #f3f4f6;
+/* App-level styles — component styles live in their own files */
+
+.page-content {
+  flex: 1;
+  padding: 1.25rem 0 2rem;
 }
 
-.main-content {
-  padding: 2rem 0;
+/* Home page */
+.home-hero {
+  padding: 1.5rem 0 1rem;
 }
 
-.container {
-  max-width: 1024px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.welcome-container {
-  margin-bottom: 2rem;
-}
-
-.welcome-title {
+.home-hero h2 {
   font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
+  color: var(--text);
+  margin-bottom: 0.5rem;
 }
 
-.welcome-text {
-  margin-bottom: 1rem;
+.home-hero p {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  margin-bottom: 1.5rem;
 }
 
-.cards-container {
+.home-cards {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-  margin-top: 2rem;
 }
 
-@media (min-width: 768px) {
-  .cards-container {
-    grid-template-columns: 1fr 1fr;
-  }
+@media (min-width: 600px) {
+  .home-cards { grid-template-columns: repeat(2, 1fr); }
 }
 
-.card {
-  background-color: white;
+.home-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
   padding: 1.5rem;
-  border-radius: 0.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
-.card-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
+.home-card h3 {
+  font-size: 1.125rem;
+  color: var(--text);
+  margin-bottom: 0.5rem;
 }
 
-.card-text {
-  margin-bottom: 1rem;
+.home-card p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  flex: 1;
+  margin-bottom: 1.25rem;
 }
 
-.btn {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-}
-
-.btn-primary {
-  background-color: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #1d4ed8;
-}
-
-.btn-success {
-  background-color: #10b981;
-  color: white;
-}
-
-.btn-success:hover {
-  background-color: #059669;
-}
-
-.footer {
-  background-color: #1f2937;
-  color: white;
+/* Footer */
+.app-footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
   padding: 1rem;
   text-align: center;
-} 
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
