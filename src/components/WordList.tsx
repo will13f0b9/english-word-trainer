@@ -140,7 +140,7 @@ const WordList: React.FC<WordListProps> = ({ words, onWordDeleted, onWordUpdated
               }}>
                 {word.term}
                 {word.priority && (
-                  <span style={{ color: 'var(--warning)', display: 'inline-flex', lineHeight: 1 }}>
+                  <span aria-hidden="true" style={{ color: 'var(--warning)', display: 'inline-flex', lineHeight: 1 }}>
                     <FlameIcon active={true} />
                   </span>
                 )}
@@ -160,6 +160,8 @@ const WordList: React.FC<WordListProps> = ({ words, onWordDeleted, onWordUpdated
                 className="btn-icon"
                 onClick={() => { toggleWordPriority(word.id); onWordUpdated(); }}
                 title={word.priority ? 'Remove priority' : 'Mark as priority'}
+                aria-label={word.priority ? 'Remove priority' : 'Mark as priority'}
+                aria-pressed={word.priority ?? false}
                 style={{ color: word.priority ? 'var(--warning)' : 'var(--text-muted)' }}
               >
                 <FlameIcon active={word.priority ?? false} />
