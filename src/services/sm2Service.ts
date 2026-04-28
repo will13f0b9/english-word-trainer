@@ -47,7 +47,15 @@ const pickPreferringPriority = (candidates: Word[]): Word => {
   return pool[Math.floor(Math.random() * pool.length)];
 };
 
-export const selectNextWord = (words: Word[], sessionNewCount: number): Word => {
+// Filter out recently-shown words; if nothing remains, return the original list
+// so the caller never ends up with an empty pool.
+const withoutRecent = (candidates: Word[], excludeIds: Set<string>): Word[] => {
+  if (excludeIds.size === 0) return candidates;
+  const filtered = candidates.filter(w => !excludeIds.has(w.id));
+  return filtered.length > 0 ? filtered : candidates;
+};
+
+export const selectNextWord = (words: Word[], sessionNewCount: number, excludeIds: Set<string> = new Set()): Word => {
   const now = Date.now();
   const eligible = words.filter(w => !w.mastered);
 
@@ -56,13 +64,13 @@ export const selectNextWord = (words: Word[], sessionNewCount: number): Word => 
     w => w.smNextReview != null && w.smNextReview <= now
   );
   if (dueWords.length > 0) {
-    return pickPreferringPriority(dueWords);
+    return pickPreferringPriority(withoutRecent(dueWords, excludeIds));
   }
 
   // Priority 2: new words (never seen), within the per-session cap
   const newWords = eligible.filter(w => w.smNextReview == null);
   if (newWords.length > 0 && sessionNewCount < MAX_NEW_PER_SESSION) {
-    return pickPreferringPriority(newWords);
+    return pickPreferringPriority(withoutRecent(newWords, excludeIds));
   }
 
   // Priority 3: fallback — prefer earliest-scheduled prioritized future word,
@@ -71,10 +79,11 @@ export const selectNextWord = (words: Word[], sessionNewCount: number): Word => 
     .filter(w => w.smNextReview != null && w.smNextReview > now)
     .sort((a, b) => (a.smNextReview ?? 0) - (b.smNextReview ?? 0));
   if (futureWords.length > 0) {
-    const prioritizedFuture = futureWords.filter(w => w.priority);
-    return prioritizedFuture.length > 0 ? prioritizedFuture[0] : futureWords[0];
+    const candidates = withoutRecent(futureWords, excludeIds);
+    const prioritizedFuture = candidates.filter(w => w.priority);
+    return prioritizedFuture.length > 0 ? prioritizedFuture[0] : candidates[0];
   }
 
   // Last resort: any eligible word (handles all-new + cap exceeded edge case)
-  return pickPreferringPriority(eligible);
+  return pickPreferringPriority(withoutRecent(eligible, excludeIds));
 };
