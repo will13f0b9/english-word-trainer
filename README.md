@@ -56,3 +56,4 @@ To learn React, check out the [React documentation](https://reactjs.org/).
 7 - ~~Fix the icon and title page for the rigth app name. And add go home on logo header click~~ ✅
 8 - ~~In the word list page and quiz page, add a option in the word list page to priorize word to be selected more often in the quiz page.~~ ✅
 9 - ~~Improve layout for a nice mobile experience, I like dark theme and greys scales.~~ ✅
+10 - ~~Fix the title name page and also the icon page~~ ✅

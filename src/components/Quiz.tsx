@@ -21,19 +21,22 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
   const [animatingNext, setAnimatingNext] = useState(false);
   const [optionsRevealed, setOptionsRevealed] = useState(false);
   const [sessionNewCount, setSessionNewCount] = useState(0);
+  const [recentWordIds, setRecentWordIds] = useState<string[]>([]);
   const initializedRef = useRef(false);
+  const RECENT_WINDOW = 3;
 
   useEffect(() => { setLocalWords(words); }, [words]);
 
   useEffect(() => {
     if (!initializedRef.current && localWords.length >= 4) {
       initializedRef.current = true;
-      generateNewQuestion(localWords, sessionNewCount);
+      generateNewQuestion(localWords, sessionNewCount, []);
     }
   }, [localWords]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const generateNewQuestion = (wordList: Word[], newCount: number) => {
-    const questionWord = selectNextWord(wordList, newCount);
+  const generateNewQuestion = (wordList: Word[], newCount: number, recentIds: string[]) => {
+    const questionWord = selectNextWord(wordList, newCount, new Set(recentIds));
+    setRecentWordIds([...recentIds, questionWord.id].slice(-RECENT_WINDOW));
     setCurrentQuestion(questionWord);
 
     const correctOption = questionWord.definition;
@@ -57,16 +60,16 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
     setOptionsRevealed(false);
   };
 
-  const generateQuestion = (wordList: Word[], newCount: number) => {
+  const generateQuestion = (wordList: Word[], newCount: number, recentIds: string[]) => {
     if (wordList.length < 4) return;
     if (currentQuestion) {
       setAnimatingNext(true);
       setTimeout(() => {
         setAnimatingNext(false);
-        generateNewQuestion(wordList, newCount);
+        generateNewQuestion(wordList, newCount, recentIds);
       }, 300);
     } else {
-      generateNewQuestion(wordList, newCount);
+      generateNewQuestion(wordList, newCount, recentIds);
     }
   };
 
@@ -90,7 +93,7 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
     }
   };
 
-  const handleNextQuestion = () => generateQuestion(localWords, sessionNewCount);
+  const handleNextQuestion = () => generateQuestion(localWords, sessionNewCount, recentWordIds);
 
   if (localWords.filter(w => !w.mastered).length < 4) {
     return (
