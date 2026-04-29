@@ -48,6 +48,41 @@ const FlameIcon = ({ active }: { active: boolean }) => (
   </svg>
 );
 
+const QuizStats = ({ totalAttempts, totalCorrect }: { totalAttempts?: number; totalCorrect?: number }) => {
+  const attempts = totalAttempts ?? 0;
+  const correct = totalCorrect ?? 0;
+  const accuracy = attempts > 0 ? correct / attempts : 0;
+
+  let barColor = '#6b7280'; // grey for 0 attempts
+  if (attempts > 0) {
+    if (accuracy >= 0.7) barColor = '#34d399';       // green
+    else if (accuracy >= 0.4) barColor = 'var(--warning)'; // yellow
+    else barColor = '#f87171';                          // red
+  }
+
+  return (
+    <div style={{ width: 100, flexShrink: 0 }}>
+      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem', whiteSpace: 'nowrap' }}>
+        {attempts} attempts
+      </p>
+      <div style={{
+        height: 6,
+        background: 'var(--border)',
+        borderRadius: 9999,
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${accuracy * 100}%`,
+          background: barColor,
+          borderRadius: 9999,
+          transition: 'width 0.3s ease',
+        }} />
+      </div>
+    </div>
+  );
+};
+
 const WordList: React.FC<WordListProps> = ({ words, onWordDeleted, onWordUpdated }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredWords, setFilteredWords] = useState<Word[]>(words);
@@ -153,6 +188,9 @@ const WordList: React.FC<WordListProps> = ({ words, onWordDeleted, onWordUpdated
                 {word.definition}
               </p>
             </div>
+
+            {/* Quiz stats */}
+            <QuizStats totalAttempts={word.totalAttempts} totalCorrect={word.totalCorrect} />
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
