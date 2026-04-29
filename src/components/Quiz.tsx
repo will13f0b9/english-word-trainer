@@ -88,7 +88,11 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
       const updatedWord = calculateSM2(currentQuestion, correct);
       updateWordSM2(updatedWord);
       recordQuizAttempt(currentQuestion.id, correct);
-      const updatedLocalWords = localWords.map(w => w.id === updatedWord.id ? updatedWord : w);
+      const updatedLocalWords = localWords.map(w => w.id === updatedWord.id ? {
+        ...updatedWord,
+        totalAttempts: (updatedWord.totalAttempts ?? 0) + 1,
+        totalCorrect: (updatedWord.totalCorrect ?? 0) + (correct ? 1 : 0),
+      } : w);
       setLocalWords(updatedLocalWords);
       if (isNew && correct) setSessionNewCount(c => c + 1);
     }
