@@ -91,13 +91,18 @@ const WordList: React.FC<WordListProps> = ({ words, onWordDeleted, onWordUpdated
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const byAttempts = (a: { totalAttempts?: number }, b: { totalAttempts?: number }) =>
+      (b.totalAttempts ?? 0) - (a.totalAttempts ?? 0);
+
     if (searchQuery.trim() === '') {
-      setFilteredWords(words);
+      setFilteredWords([...words].sort(byAttempts));
     } else {
       const q = searchQuery.toLowerCase();
-      setFilteredWords(words.filter(w =>
-        w.term.toLowerCase().includes(q) || w.definition.toLowerCase().includes(q)
-      ));
+      setFilteredWords(
+        words
+          .filter(w => w.term.toLowerCase().includes(q) || w.definition.toLowerCase().includes(q))
+          .sort(byAttempts)
+      );
     }
   }, [searchQuery, words]);
 
