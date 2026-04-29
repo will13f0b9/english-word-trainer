@@ -9,4 +9,6 @@ export interface Word {
   smRepetitions?: number;   // consecutive correct answers
   smEaseFactor?: number;    // quality multiplier (min 1.3, default 2.5)
   smNextReview?: number;    // timestamp (ms) of next scheduled review
+  totalAttempts?: number;   // total quiz attempts for this word
+  totalCorrect?: number;    // total correct answers for this word
 } 
