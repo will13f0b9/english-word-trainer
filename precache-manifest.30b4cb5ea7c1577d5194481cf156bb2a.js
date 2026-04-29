@@ -1,10 +1,10 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "32b41eb76b04cf7a97ef99a24ee0b357",
+    "revision": "404dd8e2149738be995a6f5457f33e32",
     "url": "/english-word-trainer/index.html"
   },
   {
-    "revision": "f1d56dce287356903f8b",
+    "revision": "6ad2ddd4844499cc4998",
     "url": "/english-word-trainer/static/css/main.db0f6c22.chunk.css"
   },
   {
@@ -12,8 +12,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/english-word-trainer/static/js/2.c7821bdd.chunk.js"
   },
   {
-    "revision": "f1d56dce287356903f8b",
-    "url": "/english-word-trainer/static/js/main.251f4716.chunk.js"
+    "revision": "6ad2ddd4844499cc4998",
+    "url": "/english-word-trainer/static/js/main.436af584.chunk.js"
   },
   {
     "revision": "655b5eb20be75d7cc226",
