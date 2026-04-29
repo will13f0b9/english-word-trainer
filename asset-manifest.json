@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/english-word-trainer/static/css/main.db0f6c22.chunk.css",
-    "main.js": "/english-word-trainer/static/js/main.a9e8ee16.chunk.js",
-    "main.js.map": "/english-word-trainer/static/js/main.a9e8ee16.chunk.js.map",
+    "main.js": "/english-word-trainer/static/js/main.251f4716.chunk.js",
+    "main.js.map": "/english-word-trainer/static/js/main.251f4716.chunk.js.map",
     "runtime~main.js": "/english-word-trainer/static/js/runtime~main.2829b61a.js",
     "runtime~main.js.map": "/english-word-trainer/static/js/runtime~main.2829b61a.js.map",
     "static/js/2.c7821bdd.chunk.js": "/english-word-trainer/static/js/2.c7821bdd.chunk.js",
     "static/js/2.c7821bdd.chunk.js.map": "/english-word-trainer/static/js/2.c7821bdd.chunk.js.map",
     "index.html": "/english-word-trainer/index.html",
-    "precache-manifest.a80f09dbca0b5eed9ea0a6ca6bee6364.js": "/english-word-trainer/precache-manifest.a80f09dbca0b5eed9ea0a6ca6bee6364.js",
+    "precache-manifest.703ef2f068ae7fd12bf496bf87883fad.js": "/english-word-trainer/precache-manifest.703ef2f068ae7fd12bf496bf87883fad.js",
     "service-worker.js": "/english-word-trainer/service-worker.js",
     "static/css/main.db0f6c22.chunk.css.map": "/english-word-trainer/static/css/main.db0f6c22.chunk.css.map"
   }
