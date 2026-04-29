@@ -67,6 +67,19 @@ export const toggleWordPriority = (id: string): void => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
 };
 
+export const recordQuizAttempt = (id: string, correct: boolean): void => {
+  const words = getWords().map(word =>
+    word.id === id
+      ? {
+          ...word,
+          totalAttempts: (word.totalAttempts ?? 0) + 1,
+          totalCorrect: (word.totalCorrect ?? 0) + (correct ? 1 : 0),
+        }
+      : word
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+};
+
 // Export words to a JSON file
 export const exportWordsToJSON = (): void => {
   const words = getWords();

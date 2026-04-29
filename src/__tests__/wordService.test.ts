@@ -1,4 +1,4 @@
-import { getWords, saveWord, toggleWordPriority } from '../services/wordService';
+import { getWords, saveWord, toggleWordPriority, recordQuizAttempt } from '../services/wordService';
 import { Word } from '../models/Word';
 
 const localStorageMock = (() => {
@@ -57,5 +57,54 @@ describe('toggleWordPriority', () => {
     toggleWordPriority('w4');
     const unchanged = getWords().find(w => w.id === 'w5');
     expect(unchanged?.priority).toBe(true);
+  });
+});
+
+describe('recordQuizAttempt', () => {
+  it('initializes totalAttempts to 1 and totalCorrect to 1 on first correct attempt', () => {
+    const word = makeWord({ id: 'r1', term: 'run' });
+    saveWord(word);
+    recordQuizAttempt('r1', true);
+    const updated = getWords().find(w => w.id === 'r1');
+    expect(updated?.totalAttempts).toBe(1);
+    expect(updated?.totalCorrect).toBe(1);
+  });
+
+  it('initializes totalAttempts to 1 and totalCorrect to 0 on first incorrect attempt', () => {
+    const word = makeWord({ id: 'r2', term: 'run2' });
+    saveWord(word);
+    recordQuizAttempt('r2', false);
+    const updated = getWords().find(w => w.id === 'r2');
+    expect(updated?.totalAttempts).toBe(1);
+    expect(updated?.totalCorrect).toBe(0);
+  });
+
+  it('increments both counters on subsequent correct attempt', () => {
+    const word = makeWord({ id: 'r3', term: 'run3', totalAttempts: 4, totalCorrect: 3 });
+    saveWord(word);
+    recordQuizAttempt('r3', true);
+    const updated = getWords().find(w => w.id === 'r3');
+    expect(updated?.totalAttempts).toBe(5);
+    expect(updated?.totalCorrect).toBe(4);
+  });
+
+  it('increments only totalAttempts on incorrect attempt', () => {
+    const word = makeWord({ id: 'r4', term: 'run4', totalAttempts: 4, totalCorrect: 3 });
+    saveWord(word);
+    recordQuizAttempt('r4', false);
+    const updated = getWords().find(w => w.id === 'r4');
+    expect(updated?.totalAttempts).toBe(5);
+    expect(updated?.totalCorrect).toBe(3);
+  });
+
+  it('does not affect other words', () => {
+    const w1 = makeWord({ id: 'r5', term: 'apple2', totalAttempts: 2, totalCorrect: 1 });
+    const w2 = makeWord({ id: 'r6', term: 'banana2', totalAttempts: 5, totalCorrect: 5 });
+    saveWord(w1);
+    saveWord(w2);
+    recordQuizAttempt('r5', true);
+    const unchanged = getWords().find(w => w.id === 'r6');
+    expect(unchanged?.totalAttempts).toBe(5);
+    expect(unchanged?.totalCorrect).toBe(5);
   });
 });
