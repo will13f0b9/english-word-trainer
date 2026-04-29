@@ -11,7 +11,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'home' | 'words' | 'quiz'>('home');
   const [words, setWords] = useState<Word[]>([]);
 
-  useEffect(() => { loadWords(); }, []);
+  useEffect(() => { loadWords(); }, [currentPage]);
 
   const loadWords = () => setWords(getWords());
 
