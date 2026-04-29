@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Word } from '../models/Word';
-import { toggleWordMastery, updateWordSM2 } from '../services/wordService';
+import { toggleWordMastery, updateWordSM2, recordQuizAttempt } from '../services/wordService';
 import { calculateSM2, selectNextWord } from '../services/sm2Service';
 import TextToSpeech from './TextToSpeech';
 import AudioRecorder from './AudioRecorder';
@@ -87,6 +87,7 @@ const Quiz: React.FC<QuizProps> = ({ words, onWordMastered }) => {
       const isNew = currentQuestion.smNextReview == null;
       const updatedWord = calculateSM2(currentQuestion, correct);
       updateWordSM2(updatedWord);
+      recordQuizAttempt(currentQuestion.id, correct);
       const updatedLocalWords = localWords.map(w => w.id === updatedWord.id ? updatedWord : w);
       setLocalWords(updatedLocalWords);
       if (isNew && correct) setSessionNewCount(c => c + 1);
